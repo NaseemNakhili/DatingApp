@@ -30,15 +30,15 @@ namespace API.Controller
         [HttpPost("register")]  //api/account/register
         public async Task<ActionResult<UserDto>> Register(RegisterDto registerDto)
         {
-            if (await UserExists(registerDto.userName))
+            if (await UserExists(registerDto.UserName))
                 return BadRequest("User name is taken");
 
 
             using var hmac = new HMACSHA512();
             var user = new AppUser
             {
-                userName = registerDto.userName.ToLower(),
-                passwordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(registerDto.password)),
+                UserName = registerDto.UserName.ToLower(),
+                PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(registerDto.Password)),
                 PasswordSalt = hmac.Key
 
 
@@ -47,7 +47,7 @@ namespace API.Controller
             await _context.SaveChangesAsync();
             return new UserDto
             {
-                UserName = user.userName,
+                UserName = user.UserName,
                 Token = _tokenService.CreateToken(user)
             };
 
@@ -55,22 +55,22 @@ namespace API.Controller
         [HttpPost("login")]
         public async Task<ActionResult<UserDto>> Login(LoginDto loginDto)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(x => x.userName == loginDto.userName);
+            var user = await _context.Users.SingleOrDefaultAsync(x => x.UserName == loginDto.UserName);
 
             if (user == null) return Unauthorized();
 
             using var hmac = new HMACSHA512(user.PasswordSalt);
-            var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(loginDto.password));
+            var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(loginDto.Password));
 
             for (int i = 0; i < computedHash.Length; i++)
             {
-                if (computedHash[i] != user.passwordHash[i]) return Unauthorized("invalid pasword");
+                if (computedHash[i] != user.PasswordHash[i]) return Unauthorized("invalid pasword");
 
 
             }
             return new UserDto
             {
-                UserName = user.userName,
+                UserName = user.UserName,
                 Token = _tokenService.CreateToken(user)
             };
 
@@ -78,10 +78,10 @@ namespace API.Controller
         }
 
 
-        private async Task<bool> UserExists(string userName)
+        private async Task<bool> UserExists(string UserName)
         {
 
-            return await _context.Users.AnyAsync(user => user.userName == userName.ToLower());
+            return await _context.Users.AnyAsync(user => user.UserName == UserName.ToLower());
         }
 
     }
